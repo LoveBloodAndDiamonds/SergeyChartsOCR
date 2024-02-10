@@ -24,8 +24,6 @@ def _find_missing_colors(image_path: str, colors_dict: dict[str, int]) -> tuple[
     # Загрузка изображения
     image = Image.open(image_path)
 
-    image.save(f"check_1.png")
-
     pixels: PyAccess = image.load()  # noqa (pycharm type error)
 
     # Перебор всех пикселей
@@ -48,7 +46,6 @@ def _find_missing_colors(image_path: str, colors_dict: dict[str, int]) -> tuple[
                     elif color == "GREEN":
                         green += 1
 
-    image.save(f"check_2.png")
     return red, orange, yellow, light_green, green
 
 
