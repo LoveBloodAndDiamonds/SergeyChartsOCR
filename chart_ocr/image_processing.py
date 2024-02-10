@@ -1,14 +1,15 @@
-from PIL import Image, ImageEnhance, ImageFilter
+from PIL import Image, ImageEnhance
 
-from .settings import REPLACING_PIXELS_BOUNDAREA, IMAGE_SCALE_FACTOR, CONTRAST_FACTOR, PIXELS_TRIM_FROM_LEFT, \
-    TMP_FOLDER_PATH, GREEN
+from .settings import IMAGE_SCALE_FACTOR, CONTRAST_FACTOR, PIXELS_TRIM_FROM_LEFT, \
+    TMP_FOLDER_PATH, PIXELS_TRIM_TOP_AND_BOTTOM
 
 
-def split_image_to_parts(image: Image) -> list[str]:
+def split_image_to_parts(image: Image, is_enchanced: bool) -> list[str]:
     """
     Разделяет изображение на 4 части, каждый из которых содержит свой столбец
     на графике.
     :param image:
+    :param is_enchanced:
     :return: Список путей до этих частей.
     """
     # Разрезаем изображение на 4 части, каждая из которых содержит в себе свой график
@@ -25,7 +26,7 @@ def split_image_to_parts(image: Image) -> list[str]:
 
         part_image = image.crop((left, top, right, bottom))
 
-        part_image_path = f'{TMP_FOLDER_PATH}/part_{i}.png'
+        part_image_path = f'{TMP_FOLDER_PATH}/{"e_" if is_enchanced else ""}part_{i}.png'
         part_image.save(part_image_path)
 
         path_list.append(part_image_path)
@@ -33,7 +34,7 @@ def split_image_to_parts(image: Image) -> list[str]:
     return path_list
 
 
-def trim_image(image: Image) -> Image:
+def trim_image_left(image: Image) -> Image:
     """
     Обрезает изображение и возвращает путь к новому обрезаному изображению.
     :param image: Путь до картинки
@@ -52,6 +53,25 @@ def trim_image(image: Image) -> Image:
     return cropped_image
 
 
+def trim_image_top_and_bottom(image: Image) -> Image:
+    """
+    Обрезает изображение и возвращает путь к новому обрезаному изображению.
+    :param image: Путь до картинки
+    :return:
+    """
+    # Получение размеров исходного изображения
+    width, height = image.size
+
+    # Обрезаем изображение сверху и снизу на 400 пикселей
+    left = 0
+    top = PIXELS_TRIM_TOP_AND_BOTTOM
+    right = width
+    bottom = height - PIXELS_TRIM_TOP_AND_BOTTOM
+    cropped_image = image.crop((left, top, right, bottom))
+
+    return cropped_image
+
+
 def improve_image_quality(image: Image) -> Image:
     """
     Функция улучшает качество изображения, изменяет его цвета и делает более читабельным для OCR библиотек.
@@ -64,24 +84,11 @@ def improve_image_quality(image: Image) -> Image:
     # Конвертация в черно-белое
     image = image.convert('L')
 
-    # Замена белых пикселей на синие
-    # pixels = image.load()  # Получение доступа к пикселям изображения
-    # for y in range(image.size[1]):  # Высота изображения
-    #     for x in range(image.size[0]):  # Ширина изображения
-    #         r, g, b, a = pixels[x, y]
-    #         # Проверить, является ли пиксель белым
-    #         if all([r > REPLACING_PIXELS_BOUNDAREA, g > REPLACING_PIXELS_BOUNDAREA, b > REPLACING_PIXELS_BOUNDAREA]):
-    #             # Заменить цвет пикселя на синий и установить полную непрозрачность
-    #             pixels[x, y] = (0, 0, 0, 255)  # pixels[x, y] = (0, 0, 255, 255)
-    #         if (r, g, b) == GREEN:
-    #             pixels[x, y] = (255, 0, 0, 255)
-
     # Увеличение контрастности
     enhancer = ImageEnhance.Contrast(image)
     image = enhancer.enhance(CONTRAST_FACTOR)
 
     return image
-
 
 # Так же может понадобиться:
 
@@ -93,3 +100,15 @@ def improve_image_quality(image: Image) -> Image:
 
 # Удаление шума
 # image = image.filter(ImageFilter.MedianFilter())
+
+# Замена белых пикселей на синие
+# pixels = image.load()  # Получение доступа к пикселям изображения
+# for y in range(image.size[1]):  # Высота изображения
+#     for x in range(image.size[0]):  # Ширина изображения
+#         r, g, b, a = pixels[x, y]
+#         # Проверить, является ли пиксель белым
+#         if all([r > REPLACING_PIXELS_BOUNDAREA, g > REPLACING_PIXELS_BOUNDAREA, b > REPLACING_PIXELS_BOUNDAREA]):
+#             # Заменить цвет пикселя на синий и установить полную непрозрачность
+#             pixels[x, y] = (0, 0, 0, 255)  # pixels[x, y] = (0, 0, 255, 255)
+#         if (r, g, b) == GREEN:
+#             pixels[x, y] = (255, 0, 0, 255)

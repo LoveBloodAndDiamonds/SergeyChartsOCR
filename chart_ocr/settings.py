@@ -10,15 +10,31 @@ CONTRAST_FACTOR: int = 1
 # Количество пикселей, которое обрезается слева
 PIXELS_TRIM_FROM_LEFT: int = 35
 
+# Количество пикселей, которое обрезается сверху и снизу
+PIXELS_TRIM_TOP_AND_BOTTOM: int = 400
+
 # Названия месяцев на картинке
 MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 
 # Путь до папки tmp
 TMP_FOLDER_PATH = "tmp"
 
-# Цвета на графике rgb:
-GREEN = (0, 143, 136)
-LIGHT_GREEN = (0, 192, 115)
-YELLOW = (255, 220, 72)
-ORANGE = (255, 163, 62)
-RED = (255, 51, 58)
+
+# RGB цвета
+COLORS_DICT = {
+    (0, 143, 136): "GREEN",
+    (0, 192, 115): "LIGHT_GREEN",
+    (255, 220, 72): "YELLOW",
+    (255, 163, 62): "ORANGE",
+    (255, 51, 58): "RED",
+}
+
+# Цвета после инвертации цветов
+REVERTED_COLORS_DICT = {
+    255: "WHITE",
+    99: "GREEN",
+    126: "LIGHT_GREEN",
+    214: "YELLOW",
+    179: "ORANGE",
+    113: "RED"
+}
