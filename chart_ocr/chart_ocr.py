@@ -86,31 +86,6 @@ def _find_missing_colors(image_path: str, colors_dict: dict[str, int]) -> tuple[
     return red, orange, yellow, light_green, green
 
 
-def _get_background_color(part_path: str, bbox: tuple) -> str:
-    """
-    Функция определяет цвет пикселя слева от найденного текста и возвращает его.
-    :param part_path:
-    :param bbox:
-    :return:
-    """
-    # Загрузка изображения
-    image = cv2.imread(part_path)
-
-    # Получение координат левой границы текста
-    top_left = bbox[0]
-
-    # Вычисление координат пикселя на 10 пикселей слева от текста
-    pixel_x = int(top_left[0]) + 10
-    pixel_y = int(top_left[1])
-
-    # Получение rgb кода, преобразование его в кортеж (потому что он хэшируемый, а np.array - нет)
-    # Оттенок серого определяется одним числом, но тут почему-то возвращается сразу три значения
-    # Два лишних мы отбросим.
-    pixel_color_rgb = tuple(image[pixel_y, pixel_x])[0]
-
-    return REVERTED_COLORS_DICT[pixel_color_rgb]
-
-
 def _part_ocr(enchanced_part_path: str, part_path: str) -> dict[str, list[int]]:
     """
     Функция, которая обрабатывает часть изображения, на которой только один график.
@@ -129,7 +104,6 @@ def _part_ocr(enchanced_part_path: str, part_path: str) -> dict[str, list[int]]:
         # Определение значений
         if text.isdigit():
             dominant_color = get_dominant_color(enchanced_part_path, bbox)
-            print(month, dominant_color, text)
             colors_dict[dominant_color] = int(text)
 
         # Определение месяца
