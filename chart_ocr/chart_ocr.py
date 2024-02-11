@@ -1,4 +1,5 @@
 import os
+from collections import Counter
 
 import cv2
 import easyocr
@@ -9,6 +10,41 @@ from .image_processing import improve_image_quality, trim_image_left, split_imag
 from .settings import MONTH_NAMES, TMP_FOLDER_PATH, REVERTED_COLORS_DICT, COLORS_DICT
 
 reader = easyocr.Reader(['en'], gpu=True)
+
+
+def get_dominant_color(enchanced_part_path, bbox):
+    # Загрузка изображения
+    image = cv2.imread(enchanced_part_path)
+    if image is None:
+        raise FileNotFoundError(f"Файл {enchanced_part_path} не найден.")
+
+    # Преобразование координат для обрезки изображения
+    (tl, tr, br, bl) = bbox
+    start_x, start_y = int(tl[0]), int(tl[1])
+    end_x, end_y = int(br[0]), int(br[1])
+
+    # Проверка, что координаты находятся в пределах изображения
+    if start_x < 0 or start_y < 0 or end_x > image.shape[1] or end_y > image.shape[0]:
+        raise ValueError("Координаты bbox выходят за пределы изображения.")
+
+    # Обрезка изображения по bbox
+    cropped_image = image[start_y:end_y, start_x:end_x]
+
+    # Проверка, что обрезанное изображение не пустое
+    if cropped_image.size == 0:
+        raise ValueError("Обрезанное изображение пустое.")
+
+    # Преобразование изображения в одномерный список пикселей
+    pixels = cropped_image.reshape(-1, cropped_image.shape[-1])
+
+    # Подсчет количества каждого цвета
+    color_counts = Counter(map(tuple, pixels))
+
+    # Нахождение доминирующего цвета
+    # Только первое значение, потому что это оттенки серого.
+    dominant_color = max(color_counts, key=color_counts.get)[0]
+
+    return REVERTED_COLORS_DICT[dominant_color]
 
 
 def _find_missing_colors(image_path: str, colors_dict: dict[str, int]) -> tuple[int, int, int, int, int]:
@@ -63,7 +99,7 @@ def _get_background_color(part_path: str, bbox: tuple) -> str:
     top_left = bbox[0]
 
     # Вычисление координат пикселя на 10 пикселей слева от текста
-    pixel_x = int(top_left[0]) - 10
+    pixel_x = int(top_left[0]) + 10
     pixel_y = int(top_left[1])
 
     # Получение rgb кода, преобразование его в кортеж (потому что он хэшируемый, а np.array - нет)
@@ -91,8 +127,8 @@ def _part_ocr(enchanced_part_path: str, part_path: str) -> dict[str, list[int]]:
     for (bbox, text, prob) in results:
         # Определение значений
         if text.isdigit():
-            color = _get_background_color(enchanced_part_path, bbox)
-            colors_dict[color] = int(text)
+            dominant_color = get_dominant_color(enchanced_part_path, bbox)
+            colors_dict[dominant_color] = int(text)
 
         # Определение месяца
         elif any(text.startswith(m) for m in MONTH_NAMES):

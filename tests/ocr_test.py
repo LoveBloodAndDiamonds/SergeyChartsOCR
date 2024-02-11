@@ -1,21 +1,30 @@
 from chart_ocr import chart_ocr
-
-
-def check_result(chart_data: dict[str, list]):
-    try:
-        assert chart_data["Aug"] == ["35", "9", "20", "5"], "1"
-        assert chart_data["Sep"] == ["31", "5", "15", "11"], "2"
-        assert chart_data["Oct"] == ["31", "5", "15", "11"], "3"
-        assert chart_data["Nov"] == ["31", "12", "18"], "4"
-        print("Success")
-    except Exception as e:
-        print(f"Error: {e}")
+from pprint import pp
 
 
 if __name__ == '__main__':
-    while True:
-        result = chart_ocr(f"data/{input('num:')}.png")
-        from pprint import pp
-        pp(result)
-        print()
-    # check_result(result)
+    # while True:
+    # ['17', '20', '29', '31', '32', '33', '36', '37', '40']
+    # errors = []
+    # for i in range(1, 51):
+    #     try:
+    #         i = f"0{i}" if i < 10 else str(i)
+    #
+    #         print(i)
+    #         result = chart_ocr(f"data/{i}.png")
+    #
+    #         from pprint import pp
+    #         pp(result)
+    #         print()
+    #     except Exception as e:
+    #         errors.append(i)
+    #     print(errors)
+    #     print('---')
+    # a = ['17_252', '20_177', '29_252', '31_97', '32_105', '33_190',
+    #      '36_212', '37_235', '40_101']
+    # result = chart_ocr(f"data/40.png")
+    # pp(result)
+
+    # ['32', '33', '37']
+    result = chart_ocr(f"data/11.png")
+    print(result)
