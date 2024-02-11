@@ -32,9 +32,26 @@ COLORS_DICT = {
 # Цвета после инвертации цветов
 REVERTED_COLORS_DICT = {
     255: "WHITE",
+    254: "WHITE",
+    253: "WHITE",
+
+    100: "GREEN",
     99: "GREEN",
+    98: "GREEN",
+
+    125: "LIGHT_GREEN",
     126: "LIGHT_GREEN",
+    127: "LIGHT_GREEN",
+
+    213: "YELLOW",
     214: "YELLOW",
+    215: "YELLOW",
+
+    178: "ORANGE",
     179: "ORANGE",
-    113: "RED"
+    180: "ORANGE",
+
+    112: "RED",
+    113: "RED",
+    114: "RED"
 }
