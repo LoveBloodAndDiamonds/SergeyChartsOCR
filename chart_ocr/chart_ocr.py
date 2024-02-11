@@ -20,8 +20,9 @@ def get_dominant_color(enchanced_part_path, bbox):
 
     # Преобразование координат для обрезки изображения
     (tl, tr, br, bl) = bbox
-    start_x, start_y = int(tl[0]), int(tl[1])
-    end_x, end_y = int(br[0]), int(br[1])
+    inc: int = 20  # Увеличиваем диапазон поиска на количество пикселей вне bbox
+    start_x, start_y = int(tl[0]) - inc, int(tl[1]) - inc
+    end_x, end_y = int(br[0]) + inc, int(br[1]) + inc
 
     # Проверка, что координаты находятся в пределах изображения
     if start_x < 0 or start_y < 0 or end_x > image.shape[1] or end_y > image.shape[0]:
@@ -128,6 +129,7 @@ def _part_ocr(enchanced_part_path: str, part_path: str) -> dict[str, list[int]]:
         # Определение значений
         if text.isdigit():
             dominant_color = get_dominant_color(enchanced_part_path, bbox)
+            print(month, dominant_color, text)
             colors_dict[dominant_color] = int(text)
 
         # Определение месяца
