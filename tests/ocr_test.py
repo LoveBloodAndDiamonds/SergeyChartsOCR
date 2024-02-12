@@ -19,6 +19,6 @@ if __name__ == '__main__':
     #     finally:
     #         print(errors)
     #         print('---')
-
+    # print(f"{errors=}")
     result = chart_ocr(f"data/49.png")
     print(result)

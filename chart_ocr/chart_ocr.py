@@ -1,3 +1,4 @@
+import logging
 import os
 from collections import Counter
 
@@ -6,8 +7,9 @@ import easyocr
 from PIL import Image
 from PIL.PyAccess import PyAccess
 
+from .exceptions import ColorNotFoundError
 from .image_processing import improve_image_quality, trim_image_left, split_image_to_parts, trim_image_top_and_bottom
-from .settings import MONTH_NAMES, TMP_FOLDER_PATH, REVERTED_COLORS_DICT, COLORS_DICT
+from .settings import MONTH_NAMES, TMP_FOLDER_PATH, REVERTED_COLORS_DICT, COLORS_DICT, ERRORS_FOLDER_PATH, INC
 
 reader = easyocr.Reader(['en'], gpu=True)
 
@@ -20,9 +22,8 @@ def get_dominant_color(enchanced_part_path, bbox):
 
     # Преобразование координат для обрезки изображения
     (tl, tr, br, bl) = bbox
-    inc: int = 20  # Увеличиваем диапазон поиска на количество пикселей вне bbox
-    start_x, start_y = int(tl[0]) - inc, int(tl[1]) - inc
-    end_x, end_y = int(br[0]) + inc, int(br[1]) + inc
+    start_x, start_y = int(tl[0]) - INC, int(tl[1]) - INC
+    end_x, end_y = int(br[0]) + INC, int(br[1]) + INC
 
     # Проверка, что координаты находятся в пределах изображения
     if start_x < 0 or start_y < 0 or end_x > image.shape[1] or end_y > image.shape[0]:
@@ -45,7 +46,14 @@ def get_dominant_color(enchanced_part_path, bbox):
     # Только первое значение, потому что это оттенки серого.
     dominant_color = max(color_counts, key=color_counts.get)[0]
 
-    return REVERTED_COLORS_DICT[dominant_color]
+    try:
+        return REVERTED_COLORS_DICT[dominant_color]
+    except KeyError:
+        raise ColorNotFoundError(
+            image=image,
+            bbox=bbox,
+            not_found_color=dominant_color
+        )
 
 
 def _find_missing_colors(image_path: str, colors_dict: dict[str, int]) -> tuple[int, int, int, int, int]:
@@ -175,34 +183,45 @@ def chart_ocr(image_path: str) -> dict[str, list[int]]:
         'Nov': [25, 0, 0, 15, 7, 3]
     }
     """
-    # Создаем обьект Image
-    image = Image.open(image_path)
-
-    # Валидируем размер картинки
-    assert image.size == (226, 255), "Неверный размер изображения."
-
-    # Создаем папку tmp, которая нужна для хранения временных данных
     try:
-        os.mkdir(TMP_FOLDER_PATH)
-    except FileExistsError:
-        pass
+        # Создаем обьект Image
+        image = Image.open(image_path)
 
-    # Обрезаем изображение
-    cropped_image = trim_image_left(image)
+        # Валидируем размер картинки
+        assert image.size == (226, 255), "Неверный размер изображения."
 
-    # Разрезаем изображение на 4 части, каждая из которых содержит в себе свой график
-    image_parts_paths: list[str] = split_image_to_parts(cropped_image, is_enchanced=False)
+        # Создаем папку tmp, которая нужна для хранения временных данных
+        try:
+            os.mkdir(TMP_FOLDER_PATH)
+        except FileExistsError:
+            pass
+        # Создаем папку tmp, которая нужна для хранения временных данных
+        try:
+            os.mkdir(ERRORS_FOLDER_PATH)
+        except FileExistsError:
+            pass
 
-    # Улучшаем качество изображения
-    enchanced_image = improve_image_quality(cropped_image)
+        # Обрезаем изображение
+        cropped_image = trim_image_left(image)
 
-    # Разрезаем отредактированное изображение на 4 части, каждая из которых содержит в себе свой график
-    enchanced_image_parts_paths: list[str] = split_image_to_parts(enchanced_image, is_enchanced=True)
+        # Разрезаем изображение на 4 части, каждая из которых содержит в себе свой график
+        image_parts_paths: list[str] = split_image_to_parts(cropped_image, is_enchanced=False)
 
-    # Определение результата для каждой части и их объединение.
-    result_dict = {}
-    for i in range(0, 4):
-        part_result = _part_ocr(enchanced_image_parts_paths[i], image_parts_paths[i])
-        result_dict.update(part_result)
+        # Улучшаем качество изображения
+        enchanced_image = improve_image_quality(cropped_image)
 
-    return result_dict
+        # Разрезаем отредактированное изображение на 4 части, каждая из которых содержит в себе свой график
+        enchanced_image_parts_paths: list[str] = split_image_to_parts(enchanced_image, is_enchanced=True)
+
+        # Определение результата для каждой части и их объединение.
+        result_dict = {}
+        for i in range(0, 4):
+            part_result = _part_ocr(enchanced_image_parts_paths[i], image_parts_paths[i])
+            result_dict.update(part_result)
+
+        return result_dict
+    except ColorNotFoundError as e:
+        logging.error(f"Color not found: {e.not_found_color}")
+        cv2.imwrite(
+            f"{ERRORS_FOLDER_PATH}/{e.not_found_color}:{e.start_x}-{e.start_y}-{e.end_x}-"
+            f"{e.end_y}.png", e.image)

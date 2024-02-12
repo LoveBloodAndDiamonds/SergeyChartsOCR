@@ -19,6 +19,11 @@ MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'O
 # Путь до папки tmp
 TMP_FOLDER_PATH = "tmp"
 
+# Путь до папки errors
+ERRORS_FOLDER_PATH = "errors"
+
+# Доп. диапазон в пикселях для поиска доминирующего цвета в коробке
+INC: int = 20
 
 # RGB цвета
 COLORS_DICT = {
