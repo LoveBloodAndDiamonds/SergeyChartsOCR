@@ -154,7 +154,7 @@ def _find_undefined_colors(part_path: str, colors_dict: dict[str, int]) -> dict[
             if pixels_green > 0:
                 colors_dict["GREEN"] = colors_dict.get("GREEN", 0) + round(proportion_green)
 
-        return colors_dict
+    return colors_dict
 
 
 def _part_ocr(enchanced_part_path: str, part_path: str) -> dict[str, list[int]]:
@@ -193,7 +193,6 @@ def _part_ocr(enchanced_part_path: str, part_path: str) -> dict[str, list[int]]:
         colors_dict.get("LIGHT_GREEN", 0),
         colors_dict.get("GREEN", 0),
     ]
-
     # Проверка значений на валидность
     _validity_check(sorted_num_list)
 
@@ -265,6 +264,5 @@ def chart_ocr(image_path: str) -> dict[str, list[int]]:
         cv2.imwrite(
             f"{ERRORS_FOLDER_PATH}/{e.not_found_color}:{e.start_x}-{e.start_y}-{e.end_x}-"
             f"{e.end_y}.png", e.image)
-
     except ColorsSumError as e:
         logging.error(f"Can't parce: {e}")
