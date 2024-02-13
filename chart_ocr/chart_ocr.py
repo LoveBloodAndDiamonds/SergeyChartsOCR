@@ -1,3 +1,13 @@
+"""
+Главный модуль скрипта, точка запуска.
+Как работает скрипт:
+- Изображение обрезается и разбивается на 4 части, каждая из которых содержит свой график
+- Изображение обрабатывается модулем image_processing.py, чтобы улучшить читаемость текста
+- Чтение текста с изображения посредством easyocr
+- Поиск цветов, которые не смог найти ocr, добавление их используя пропорции и ненайденные на пред. шаге цвета.
+- Выходные данные проверяются на валидность
+"""
+
 import logging
 import os
 from collections import Counter
@@ -7,14 +17,25 @@ import easyocr
 from PIL import Image
 from PIL.PyAccess import PyAccess
 
-from .exceptions import ColorNotFoundError
-from .image_processing import improve_image_quality, trim_image_left, split_image_to_parts, trim_image_top_and_bottom
+from .exceptions import ColorNotFoundError, ColorsSumError
+from .image_processing import improve_image_quality, trim_image_left, split_image_to_parts
 from .settings import MONTH_NAMES, TMP_FOLDER_PATH, REVERTED_COLORS_DICT, COLORS_DICT, ERRORS_FOLDER_PATH, INC
 
 reader = easyocr.Reader(['en'], gpu=True)
 
 
-def get_dominant_color(enchanced_part_path, bbox):
+def _validity_check(values: list[int]) -> None:
+    """
+    Проверка на валидность значений
+    :param values: [TOTAL, RED, ORANGE, YELLOW, LIGHT_GREEN, GREEN]
+    :raises ColorsSumError: Неверная сумма цветов в столбцах
+    :return:
+    """
+    if values[0] != sum(values[1:]):
+        raise ColorsSumError("OCR, incorrect sum")
+
+
+def _get_dominant_color(enchanced_part_path: str, bbox: tuple[str, str, str, str]) -> str:
     # Загрузка изображения
     image = cv2.imread(enchanced_part_path)
     if image is None:
@@ -94,31 +115,13 @@ def _find_missing_colors(image_path: str, colors_dict: dict[str, int]) -> tuple[
     return red, orange, yellow, light_green, green
 
 
-def _part_ocr(enchanced_part_path: str, part_path: str) -> dict[str, list[int]]:
+def _find_undefined_colors(part_path: str, colors_dict: dict[str, int]) -> dict[str, int]:
     """
-    Функция, которая обрабатывает часть изображения, на которой только один график.
-    :param enchanced_part_path:
-    :param part_path:
+    Функция ищет неподписанные цифрой значения.
+    :param part_path: Путь до картинки со столбцом.
+    :param colors_dict: Текущий словарь соответствий цвета и его размера.
     :return:
     """
-
-    # Распознавание текста с помощью EasyOCR
-    results = reader.readtext(enchanced_part_path)
-
-    # Извлечение чисел и месяцев из результатов
-    colors_dict: dict[str, int] = {}
-    month = None
-    for (bbox, text, prob) in results:
-        # Определение значений
-        if text.isdigit():
-            dominant_color = get_dominant_color(enchanced_part_path, bbox)
-            colors_dict[dominant_color] = int(text)
-
-        # Определение месяца
-        elif any(text.startswith(m) for m in MONTH_NAMES):
-            month = text
-
-    # Поиск неподписанных цифрой значений:
     total_elements = colors_dict["WHITE"]
     sum_signed_elements = sum(
         [colors_dict.get(color, 0) for color in ["RED", "ORANGE", "YELLOW", "LIGHT_GREEN", "GREEN"]])
@@ -151,6 +154,37 @@ def _part_ocr(enchanced_part_path: str, part_path: str) -> dict[str, list[int]]:
             if pixels_green > 0:
                 colors_dict["GREEN"] = colors_dict.get("GREEN", 0) + round(proportion_green)
 
+        return colors_dict
+
+
+def _part_ocr(enchanced_part_path: str, part_path: str) -> dict[str, list[int]]:
+    """
+    Функция, которая обрабатывает часть изображения, на которой только один график.
+    :param enchanced_part_path: Путь до обработоной картинки со столбцом
+    :param part_path: Путь до исходной картинки
+    :return:
+    """
+
+    # Распознавание текста с помощью EasyOCR
+    results = reader.readtext(enchanced_part_path)
+
+    # Извлечение чисел и месяцев из результатов
+    colors_dict: dict[str, int] = {}
+    month = None
+    for (bbox, text, prob) in results:
+        # Определение значений
+        if text.isdigit():
+            dominant_color = _get_dominant_color(enchanced_part_path, bbox)
+            colors_dict[dominant_color] = int(text)
+
+        # Определение месяца
+        elif any(text.startswith(m) for m in MONTH_NAMES):
+            month = text
+
+    # Поиск неподписанных цифрой значений:
+    colors_dict = _find_undefined_colors(part_path, colors_dict)
+
+    # Расположение элементов в правильном порядке.
     sorted_num_list: list[int] = [
         colors_dict.get("WHITE", 0),
         colors_dict.get("RED", 0),
@@ -160,6 +194,9 @@ def _part_ocr(enchanced_part_path: str, part_path: str) -> dict[str, list[int]]:
         colors_dict.get("GREEN", 0),
     ]
 
+    # Проверка значений на валидность
+    _validity_check(sorted_num_list)
+
     return {month: sorted_num_list}
 
 
@@ -167,6 +204,8 @@ def chart_ocr(image_path: str) -> dict[str, list[int]]:
     """
     Функция, которая обрабатывает изображение с графиком.
     :param image_path: Путь до картинки
+    :raises: ColorNotFoundError: Не найден цвет
+    :raises: ColorsSumError: Не пройдена проверка на сумму значений для каждого столбца
     :return: Словарь, где ключами являются названия месяца, а значением - упорядоченый список
     значений символизирующих высоту частей графика.
 
@@ -220,8 +259,12 @@ def chart_ocr(image_path: str) -> dict[str, list[int]]:
             result_dict.update(part_result)
 
         return result_dict
+
     except ColorNotFoundError as e:
         logging.error(f"Color not found: {e.not_found_color}")
         cv2.imwrite(
             f"{ERRORS_FOLDER_PATH}/{e.not_found_color}:{e.start_x}-{e.start_y}-{e.end_x}-"
             f"{e.end_y}.png", e.image)
+
+    except ColorsSumError as e:
+        logging.error(f"Can't parce: {e}")

@@ -1,3 +1,8 @@
+"""
+Модуль, который содержит в себе настройки для работы программы.
+Не рекомендуется менять эти значения самостоятельно.
+"""
+
 # Значение, во сколько раз увеличивается картинка перед поиском текста на ней
 IMAGE_SCALE_FACTOR: int = 20
 
@@ -60,23 +65,3 @@ REVERTED_COLORS_DICT = {
     113: "RED",
     114: "RED"
 }
-
-# REVERTED_COLORS_DICT = {
-#     255: "WHITE",
-#     99: "GREEN",
-#     126: "LIGHT_GREEN",
-#     214: "YELLOW",
-#     179: "ORANGE",
-#     113: "RED",
-# }
-
-# Немного расширим диапазон поиска
-# keys_to_add = []
-#
-# for original_key, color in REVERTED_COLORS_DICT.items():
-#     for i in range(original_key - 1, original_key + 2):
-#         if i != original_key and i not in REVERTED_COLORS_DICT:
-#             keys_to_add.append((i, color))
-#
-# for key, color in keys_to_add:
-#     REVERTED_COLORS_DICT[key] = color

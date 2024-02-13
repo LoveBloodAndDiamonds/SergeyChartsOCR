@@ -1,3 +1,9 @@
+"""
+Модуль, который отвечает за обработку и предобработку изображения для корректного распознавания текста на ней
+используя OCR
+"""
+
+
 from PIL import Image, ImageEnhance
 
 from .settings import IMAGE_SCALE_FACTOR, CONTRAST_FACTOR, PIXELS_TRIM_FROM_LEFT, \
@@ -89,26 +95,3 @@ def improve_image_quality(image: Image) -> Image:
     image = enhancer.enhance(CONTRAST_FACTOR)
 
     return image
-
-# Так же может понадобиться:
-
-# Конвертация в черно-белое
-# image = image.convert('L')
-
-# Инверсия цветов
-# image = ImageOps.invert(image)
-
-# Удаление шума
-# image = image.filter(ImageFilter.MedianFilter())
-
-# Замена белых пикселей на синие
-# pixels = image.load()  # Получение доступа к пикселям изображения
-# for y in range(image.size[1]):  # Высота изображения
-#     for x in range(image.size[0]):  # Ширина изображения
-#         r, g, b, a = pixels[x, y]
-#         # Проверить, является ли пиксель белым
-#         if all([r > REPLACING_PIXELS_BOUNDAREA, g > REPLACING_PIXELS_BOUNDAREA, b > REPLACING_PIXELS_BOUNDAREA]):
-#             # Заменить цвет пикселя на синий и установить полную непрозрачность
-#             pixels[x, y] = (0, 0, 0, 255)  # pixels[x, y] = (0, 0, 255, 255)
-#         if (r, g, b) == GREEN:
-#             pixels[x, y] = (255, 0, 0, 255)

@@ -1,8 +1,15 @@
+"""
+Модуль, который описывает ошибки, которые мы хотим отловить при работе скрипта.
+"""
+
 from chart_ocr.settings import INC
 
 
 class ColorNotFoundError(Exception):
-
+    """
+    Ошибка, которая вызывается, когда скрипт не смог найти цвет на графике.
+    Данные в init необходимы чтобы при ошибке сохранить картинку в директорию errors.
+    """
     def __init__(self, image, bbox: tuple, not_found_color: int):
         # Картинка
         self.image = image
@@ -14,3 +21,10 @@ class ColorNotFoundError(Exception):
 
         # Не найденное значение:
         self.not_found_color = not_found_color
+
+
+class ColorsSumError(ValueError):
+    """
+    Ошибка, которая вызывается, когда сумма значений всех цветов не равна общему значению.
+    """
+    pass
